@@ -263,11 +263,17 @@ cd ../   # return to genomes_download/
 ```
 
 ## 3. Protein analysis
+This section describes the identification of sialylation-related proteins using HMMER across (i) control proteomes and (ii) NCBI RefSeq proteomes filtered by genome quality, followed by functional validation using InterProScan.
 
 ### 3.1 Protein analysis: Control proteomes
+Control proteomes were obtained from two sources:
 
-First, we will download some proteomes based on NCBI ID which are presented in **control_proteomes.txt**. Other ones are already available in **control_proteins** folder. Those are from ATCC web and can only be download with authorizated access. Please, just use
-these fasta files for academic purposes.
+NCBI RefSeq, using accession IDs listed in *control_proteomes.txt*
+
+ATCC reference proteomes, already available in the *control_proteins/* directory
+(Note: ATCC data require authorized access and should be used strictly for academic purposes.)
+
+**3.1.1 Download of Control Proteomes from NCBI**
 ```
 conda activate ncbi_datasets
 cd ./control_proteins/ 
@@ -275,7 +281,7 @@ datasets download genome accession --inputfile control_proteomes.txt --include p
 unzip control.zip -d control
 ls control
 ```
-After download, process the files
+**3.1.2 Processing and Renaming of Control Proteomes**
 ```
 bash ../scripts/rename_control_files.sh #rename the files based on their directories
 find ./control/ncbi_dataset/data/GCF*/ -type f -iname "*.faa" -exec mv -v "{}" ./ \; #move files
@@ -284,12 +290,14 @@ while read line; do eval mv $line; done < files.txt #rename with species names
 bash ../scripts/rename_fasta_control.sh #rename fasta header with filename
 less GCF_004015025.1_Akker_munciph_NEG.faa #see content of a file
 ```
-Create directories to organize the results.
+**3.1.3 HMMER Analysis of Control Proteomes**
+Create directories to store results and execute HMMER searches:
 ```
 mkdir HMMER_CONTROL_RESULTS && cd HMMER_CONTROL_RESULTS
 bash ../../scripts/teste_hmm_control.sh
 ```
-Join all output files for each enzyme
+**3.1.4 Consolidation of HMMER Outputs**
+Concatenate output files for each enzyme model:
 ```
 cat neuA*_output.tsv > all_CMP_neuA_control_output.tsv
 cat lic3X*_output.tsv > all_lic3X_sialil_control_output.tsv
@@ -300,7 +308,7 @@ cat PF11477*_output.tsv > all_PF11477_sialil_control_output.tsv
 cat IPR010866*_output.tsv > all_IPR010866_polisialil_control_output.tsv
 cat neuS*_output.tsv > all_neuS_polisialil_control_output.tsv
 ```
-Do the same thing for coverage files
+Repeat the procedure for coverage files:
 ```
 cat neuA*_output.tsv_coverage > all_CMP_neuA_control_output_coverage.tsv
 cat lic3X*_output.tsv_coverage > all_lic3X_sialil_control_output_coverage.tsv
@@ -311,14 +319,15 @@ cat PF11477*_output.tsv_coverage > all_PF11477_sialil_control_output_coverage.ts
 cat IPR010866*_output.tsv_coverage > all_IPR010866_polisialil_control_output_coverage.tsv
 cat neuS*_output.tsv_coverage > all_neuS_polisialil_control_output_coverage.tsv
 ```
-Process output file
+Clean output formatting:
 ```
 sed -i '/#/d' *_output.tsv
 sed -i 's/ \{1,\}/\t/g' *_output.tsv 
 ```
 
-### 3.2 Protein analysis: NCBI analysis
-After filtration with CheckM, the proteomes were downloaded from NCBI
+### 3.2 Protein analysis: NCBI RefSeq Proteomes
+Proteomes corresponding to genomes that passed CheckM quality filtering were downloaded from NCBI.
+**3.2.1 Download of Filtered Proteomes** 
 ```
 cd ../../ #go to genomes_download folder and then move checkm_filter_v2_complete.tsv to this folder
 cut -f2 checkm_filter_v2_complete.tsv > checkm_filter_v2_complete_ID.tsv
@@ -328,37 +337,31 @@ rm -rfv proteins/
 unzip proteins.zip -d proteins
 datasets rehydrate --directory proteins
 ```
-After the download, proteins files were renamed with their own directory name 
+**3.2.2 Renaming and Formatting of Proteomes**
 ```
 bash ../scripts/rename_files.sh
-```
-With the proteins with their respective names, you can move them to the **proteins** directory
-```
 find proteins/ncbi_dataset/data/GCF*/ -type f -iname "*.faa" -exec mv -v "{}" ./proteins/ \;
 mkdir proteins/proteins_sialylation/final_complete_sialylation/ #create more directories
 ```
-Proteomes are now in **proteins** directory and then you can edit their fasta header, so we can identify them later on HMMER analysis.
-For this, do the following command:
+Update FASTA headers to preserve proteome identity during HMMER analysis:
 ```
 cd proteins
 for f in *.faa; do sed -i "s/^>/>${f}_/" "$f"; done
 ```
-Now the proteins files are ready to be analised. Now, let's organize subdiretories to store the results for each enzyme of sialylation process
+**3.2.3 Organization of HMMER Analyses**
 ```
 cd .. #must be at genomes_download folder
 mkdir HMMER_analysis # you must be located at **genomes_download** folder
 cd HMMER_analysis
 mkdir neuA_out pm0188_out PF11477_out neuS_out PF06002_out lst_out lic3X_out IPR010866_out
 cd ../../ #must be at genomes_download folder
-```
-Scripts for each enzyme model will be available with their respective names in **scripts** directory
 
-```
 cd scripts/
 bash ncbi_teste_own_hmmer.sh
 ```
 
-With all done, now it's time to start the process of coverage, e-value and bit-score filter. First, let's cat coverage results for each protein
+**3.2.4 Coverage Filtering**
+Concatenate coverage outputs for each enzyme:
 ```
 cd ../HMMER_analysis/
 find ./ -type f -name 'neuA*coverage' -exec cat {} + > CMP_coverage.tsv
@@ -370,9 +373,21 @@ find ./ -type f -name 'PF11477*coverage' -exec cat {} + > PF11477_coverage.tsv
 find ./ -type f -name 'PF06002*coverage' -exec cat {} + > PF06002_coverage.tsv
 find ./ -type f -name 'IPR010866*coverage' -exec cat {} + > IPR010866_coverage.tsv
 ```
-Now, go to the script **cover_hmm_filter_NCBI.ipynb** which is loccated in the path: microbial_sialylation/genomes_download/scripts/jupyter_scripts/ and follow the script. We will filter first by coverage value. Results of coverage are alrealdy available at **plots_data** folder.
+Coverage-based filtering is performed using the script: *02.cover_hmm_filter_NCBI.ipynb*, available at
+```
+scripts/jupyter_scripts/02.cover_hmm_filter_NCBI.ipynb
+```
+Filtered coverage results are saved in *plots_data/*
 
-After part 01 with coverage assessment, follow this for each core enzyme. First we are going to remove the header of each file, then get filenames to move into their respective directories.  The, we will cat output files and processed them.
+**3.2.5 Per-Enzyme Output Processing**
+For each core enzyme (NeuA, Lic3X, Lst, NeuS, Pm0188, PF06002, PF11477, IPR010866), output files are:
+
+- Filtered by coverage
+- Grouped by enzyme
+- Concatenated
+- Cleaned (comment removal and tab-delimiting)
+
+(Commands shown in the original README are retained and should be executed enzyme by enzyme as documented below.)
 
 **NeuA**
 ```
@@ -481,46 +496,50 @@ sed  's/ \{1,\}/\t/g' new_file.tsv > IPR010866_cover_filter_all.tsv
 cd ../ #must be located at HMMER_analysis folder
 ```
 
-Now, go to the script **hmm_process.ipynb** which is loccated in the path: microbial_sialylation/genomes_download/scripts/jupyter_scripts/ and follow the script to process output file. We will filter by bit-score and e-value.
+**3.2.6 Bit-Score and E-Value Filtering**
+Final HMMER filtering based on bit-score and e-value is performed using script *03.hmm_process.ipynb*, located at:
+```
+scripts/jupyter_scripts/03.hmm_process.ipynb
+```
 
-With the result, let's move faa files that passed the final filter.
+**3.2.7 Extraction of Final Sialylation Proteomes**
 ```
 cd ../proteins/
 sed -i '1d' completesialylation_GCF_ID.tsv #remove header
-```
-Move now the files into **proteins_sialylation** folder
-```
+
  while read id; do
   mv "${id}"* proteins_sialylation/ 
 done < completesialylation_GCF_ID.tsv
 ```
-Check files and how many passed
+
+Verify results:
 ```
 ls ./proteins_sialylation
 ls proteins_sialylation | wc -l 
 ```
 
-### 3.3 Protein analysis: Interproscan analysis
-First, download Interproscan tar file. For this purpose, I followed the manual by this [link](https://interproscan-docs.readthedocs.io/en/v5/UserDocs.html#obtaining-a-copy-of-interproscan).
-
+### 3.3 Protein analysis: InterProScan Annotation
+[InterProScan](https://interproscan-docs.readthedocs.io/en/v5/UserDocs.html#obtaining-a-copy-of-interproscan) was used for functional validation of predicted sialylation-related proteins.
+**3.3.1 Installation**
 ```
 cd ../../ #must be at genome_download folder
 wget https://ftp.ebi.ac.uk/pub/software/unix/iprscan/5/5.76-107.0/interproscan-5.76-107.0-64-bit.tar.gz
 tar -pxvzf interproscan-5.76-107.0-*-bit.tar.gz
 conda install bioconda::seqkit #download seqkit, which will retrieve fasta sequences for interproscan analysis
 ```
-Tsv files with sequences ID for fasta sequences to retrieve will be at **/proteins/proteins_sialylation/** folder after hmm_process R's scripts had been finished. Before take the sequences, you must rename fasta header of proteins files to retrieve the sequences successfully. 
 
+**3.3.2 Sequence Retrieval for InterProScan**
+Before extracting sequences, FASTA headers must be simplified:
 ```
 cd ./proteins/proteins_sialylation/
 sed -i 's/ .*//' *.faa
+```
+Retrieve sequences:
+```
 cd ../../../scripts # must be at genomes_download folder
-```
-So now, execute the script below to retrieve sequences
-```
 bash retrieve_sequences_for_interpro.sh
 ```
-Sequences retrieved will have **_retrieved_now** tag and will be at **scripts** folder. Let's move to another place
+Move retrieved sequences and run InterProScan:
 ```
 mkdir ../Interpro_analysis/Interpro_results
 mv *_retrieved_now ../Interpro_analysis
@@ -529,14 +548,23 @@ bash interpro_analysis.sh
 conda activate ncbi_datasets
 cd .. #must be at genomes_download folder
 ```
-Results will be at this path **Interpro_analysis/Interpro_results**. Final results will be available at **plots_data/Interpro_results/** folder, which will be useful to execute Interproscan R'script
-```
-ls ./Interpro_analysis/Interpro_results
-```
-Now it's time to execute **Interpro_results** R'script to filter sequences based on signatures. This script is available at **scripts/jupyter_scripts/** folder
 
+**3.3.3 InterProScan Output Processing**
+Results are available in:
+```
+Interpro_analysis/Interpro_results/
+plots_data/Interpro_results/
+```
+Final filtering based on InterPro signatures is performed using the R script located in:
+```
+scripts/jupyter_scripts/
+```
+The final list of proteomes passing all filters is stored in:
+```
+plots_data/complete_sialylation_interpro_filtration_final.tsv
+```
+This file is used as input for the next section: *Downstream Analysis*.
 
-Final result with all proteomes that passed interproscan are available in the file **complete_sialylation_interpro_filtration_final.tsv** which can be encounter at **genomes_download/plots_data/** folder. This is going to be used to extract info for the next topic **Downstream analysis**
 
 # 4. Downstream analysis
 
