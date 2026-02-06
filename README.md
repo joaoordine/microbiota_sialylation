@@ -1,19 +1,32 @@
-# Sialylation project of microbiota
+# PhD Project: Sialylation in the Microbiota
 
 ![Bacteria%20sia](https://github.com/edtankian97/microbiota_sialylation/blob/teste/Bacteria%20sia.gif)
 
-This project is related to my P.h.D.'s thesis which study is upon incorporation of sialic acid intestinal microbiota onto their cell wall. The main objective of the bioinformatic analysis is to
-seek in proteomes of bacterias from NCBI that has a potential proteins linked to the process of sialic acid's incorporation. For this purpose, the bioinformatic part was divided in:
+This repository contains the bioinformatic workflows developed as part of a PhD thesis investigating the incorporation of sialic acid by members of the intestinal microbiota, with a particular focus on sialylation-associated pathways and proteins involved in cell surface modification. The primary objective of this project is to identify and characterize bacterial genomes and proteomes with the potential to incorporate sialic acid, by systematically screening publicly available datasets from NCBI and complementary metagenomic resources.
 
-**1. Genome processing:** Retrieve information from NCBI, remotion of incomplete genomes and retrieve CheckM information.
+## Project overview
+The bioinformatic analyses are organized into the following major components:
 
-**2. HMMER models:** Creation of proteins datasets and creation of models.
+**1. Genome processing:** 
+- Retrieval of bacterial genomes from NCBI.
+- Removal of incomplete or low-quality genomes.
+- Assessment of genome completeness and contamination using CheckM.
 
-**3. Protein analysis:** Identification of sialylation pathway in filtered genomes/proteomes and control proteomes.
+**2. HMMER model construction:** 
+- Curation of protein datasets associated with sialic acid metabolism and incorporation.
+- Construction of Hidden Markov Models (HMMs) for pathway-specific protein detection.
 
-**4. Downstream analysis:** Genomic analysis of bacterias' genomes that have sialylation with figures created.
+**3. Protein-level analysis:** 
+- Identification of sialylation-related proteins and pathways in filtered bacterial genomes and proteomes.
+- Comparative analysis against control proteomes lacking known sialylation capabilities.
 
-**5. Metagenomic analysis:** Identification of sialylation pathway in metagenomic data of diseases correlated to sialylation process
+**4. Downstream genomic analysis:** 
+- In-depth genomic characterization of bacteria predicted to possess sialylation pathways.
+- Generation of figures and summary statistics describing gene content, organization, and distribution.
+
+**5. Metagenomic analysis:** 
+- Detection of sialylation-associated pathways in metagenomic datasets.
+- Focus on microbiomes from diseases potentially linked to altered sialic acid metabolism or utilization.
 
 ## Structure of folders before everything (still in construction, ignore for while)
 
@@ -76,16 +89,20 @@ To download this repository, run:
 ```
 git clone https://github.com/edtankian97/microbiota_sialylation.git
 ```
-Observation: **assembly_summary.txt** may have an unexpected problem of data when downloaded. A quick solution is to remove the file and then download it directly from Github website. 
+**Note:** The file *assembly_summary.txt* may occasionally be corrupted or incomplete when downloaded programmatically.
+If this occurs, delete the file and download it manually directly from the GitHub or NCBI website.
 
 ## 1. Genome processing
 
-### 1.1 Retrieve genome information
+### 1.1 Retrieval of genome information
+Bacterial genome metadata were downloaded from NCBI RefSeq using wget:
+- Source: [NCBI RefSeq bacteria](https://ftp.ncbi.nlm.nih.gov/genomes/refseq/bacteria/assembly_summary.txt). 
+- The original dataset is named *assembly_summary.txt* and should be placed in the directory:
+```
+genomes_download/
+```
 
-First of all, genomes were download with command wget at [NCBI](https://ftp.ncbi.nlm.nih.gov/genomes/refseq/bacteria/assembly_summary.txt). 
- The original dataset is named **assembly_summary.txt** and be encountered in **genomes_download** directory.
-
-### 1.2 Filtering NCBI retrieved dataset
+### 1.2 Filtering the NCBI dataset
 ```
 mv assembly_summary.txt ./genomes_download && mv CheckM_report_prokaryotes.txt ./genomes_download
 cd genomes_download
@@ -93,25 +110,35 @@ grep -c “Complete” assembly_summary.txt
 grep "Complete" assembly_summary.txt > assembly_complete
 cut -f1,8,9,20 assembly_complete > assembly_complete_summary.tsv #retrieve info that I want to get
 ```
+The resulting file assembly_complete_summary.tsv contains the selected metadata fields required for downstream analyses.
 
-### 1.3 Retrieve CheckM information
-First of all, start with the ipynb file named as **Checkm_refseq_Reanalise_V2_R.ipynb** which will be in this path=genomes_download/scripts/jupyter_scripts/
-If you do not have installed miniconda or anaconda yet, please follow the instructions in this [link](https://docs.conda.io/projects/conda/en/latest/user-guide/install/linux.html).
+### 1.3 Retrieval of CheckM Information
+Begin with the first script: *01.Checkm_refseq_Reanalise_V2_R.ipynb*, located at 
+```
+genomes_download/scripts/jupyter_scripts/
+```
+If you do not have Miniconda or Anaconda installed, follow the installation instructions available [here](https://docs.conda.io/projects/conda/en/latest/user-guide/install/linux.html).
 
-**-Creation of conda environment and installation of ncbi_datasets. More information about ncbi_datasets, click this [link](https://github.com/ncbi/datasets)**
+**1.3.1 Creation of Conda Environment and Installation of ncbi_datasets**
+Additional information on ncbi_datasets is available [here](https://github.com/ncbi/datasets):
+
 ```
 conda create -n ncbi_datasets python=3.8 #creation of the anaconda environment: Digit y or yes to continue the installation. If error occurs, you might update the python version.
 conda activate ncbi_datasets #Activation of the environment. Do this after creation of the environment
 conda install -c conda-forge ncbi-datasets-cli
 ```
-**-retrieve missing data of completeness from ncbi_datasets**
+
+**1.3.2 Retrieval of Missing CheckM Completeness Data from NCBI**
 ```
 sed -i '1d' GCF_complete_without_checkM.txt
 xargs -a GCF_complete_without_checkM.txt -I {} datasets summary genome accession {} --as-json-lines | dataformat tsv genome --fields organism-name,accession,checkm-completeness,checkm-contamination > remain_CheckM_data.tsv
 mv remain_CheckM_data.tsv remain_CheckM_data_complete.tsv
 ```
-after this, continue the Part 02 of script: **Checkm_refseq_Reanalise_V2_R.ipynb**
-Run CheckM to get completeness and contamination of missing data.  Information of instalation can be found [here](https://github.com/Ecogenomics/CheckM/wiki/Installation). Below, you can find the commands for installation
+After this step, return to Part 02 of the notebook: *01.Checkm_refseq_Reanalise_V2_R.ipynb*. 
+
+**1.3.3 Running CheckM for Missing Genomes**
+To compute completeness and contamination for genomes lacking CheckM data, install CheckM following the official [documentation]:(https://github.com/Ecogenomics/CheckM/wiki/Installation). Nonetheless, below are the commands to:
+- Conda environment setup
 ```
 conda create -n checkm python=3.9
 conda activate checkm
@@ -119,12 +146,14 @@ conda install -c bioconda numpy matplotlib pysam
 conda install -c bioconda hmmer prodigal pplacer
 pip3 install checkm-genome
 ```
-Download CheckM database and substitute /path/to/my_checkm_data to where the database is located. Then, execute CheckM script
+- Download and Configure the CheckM Database
 ```
 wget https://data.ace.uq.edu.au/public/CheckM_databases/checkm_data_2015_01_16.tar.gz
 export CHECKM_DATA_PATH=/path/to/my_checkm_data
 ```
-**Download missing genomes for contamination analysis and run CheckM**
+Replace */path/to/my_checkm_data* with the actual directory where the database is stored.
+
+**1.3.4 Download Genomes and Run CheckM**
 ```
 pwd #you should be in the directory genomes_download
 sed '1d' remain_CheckM_data_complete_with_NA.tsv > remain_CheckM_data_complete_with_NA_ID.tsv
@@ -134,53 +163,105 @@ rm ncbi_dataset.zip
 find ./remain_CheckM/data/GCF_000*/ -type f -iname "*.fna" -exec mv -v "{}" ./remain_CheckM/ \;
  bash ./scripts/checkM_ncbi.sh
 ```
-Output folder is **checkm_result_ncbi** and output file **bin_stats_ext.tsv** will be located at **checkm_result_ncbi/storage** folder. 
-But **bin_stats_ext.tsv** is also located at **genomes_download/plots_data** folder.
+
+**1.3.5 CheckM Output Processing**
+The main output directory is:
+```
+checkm_result_ncbi/
+```
+The primary results file *bin_stats_ext.tsv* is located in:
+```
+checkm_result_ncbi/storage/
+```
+A copy is also available in: 
+```
+genomes_download/plots_data/
+```
+
+Process the CheckM output as follows:
 ```
 cd checkm_result_ncbi
 awk -F',' '/^GCF_/ { print $1, $11, $12 }' bin_stats_ext.tsv > checkm_GCF_delim.txt #delimiter rows with comma
 awk -F' ' 'BEGIN{OFS="\t"} /^GCF_/ { print $1, $6, $8 }' checkm_GCF_delim.txt > quality_report.tsv #choose right colummns that I want
 ```
-Now return to the script **Checkm_refseq_Reanalise_V2_R.ipynb**
+The file *quality_report.tsv* contains genome accession IDs along with completeness and contamination values used for downstream filtering.
+At this point, return to the notebook: *Checkm_refseq_Reanalise_V2_R.ipynb*
 
-## 2 HMMER models
 
-Full process of download of sequences and remotion of duplicates are well described at [Thais_github](https://github.com/ThaisAFM/sialic_acid_catalog)
-We removed duplicated sequences with CD-HIT, which can be downloaded following this [guide](https://github.com/weizhongli/cdhit)
-(Example usage of cd-hit: cd-hit -i [PROTEIN_FASTA_NAME] -o [CD_HIT_ENZYME_NAME_MODE_TYPE_OUTPUT_FILE]  -c 1.00 -n 5 ).
+## 2. HMMER Model Construction
+The complete procedure for downloading reference protein sequences and removing duplicate entries is described in detail in [this repository]:(https://github.com/ThaisAFM/sialic_acid_catalog).
 
+Briefly, duplicate protein sequences were removed using CD-HIT. Installation instructions for CD-HIT are available [here]:(https://github.com/weizhongli/cdhit)
+
+Example of CD-HIT usage:
 ```
-#go to where tar file of sialylation sequences fasta is located 
-cd genomes_download/Protein_database
+cd-hit -i [PROTEIN_FASTA_INPUT] \
+       -o [CD_HIT_OUTPUT_FASTA] \
+       -c 1.00 -n 5
+```
 
-#untar the file, then delete tar file after
-tar -xf fastas_sialylation_final.tar.gz --strip-components=1 
+### 2.1 Preparation of Protein Sequence Datasets
+Navigate to the directory containing the compressed FASTA files:
+```
+cd genomes_download/Protein_database
+```
+Extract the sialylation-related and control protein datasets, then remove the compressed archives:
+```
+tar -xf fastas_sialylation_final.tar.gz --strip-components=1
 rm fastas_sialylation_final.tar.gz
-tar -xf fastas_others_final.tar.gz --strip-components=1 
+
+tar -xf fastas_others_final.tar.gz --strip-components=1
 rm fastas_others_final.tar.gz
 ```
-After this, it's turn to do an alignment. For this purpose, follow [mafft](https://mafft.cbrc.jp/alignment/software/) installation.  
-(Example of mafft usage: mafft --auto [CD_HIT_ENZYME_NAME_MODE_TYPE_OUTPUT_FILE] > [ENZYME_NAME_MODE_TYPE_OUTPUT_FILE]_mafft.fasta).
-Results will be located at genomes_download/Protein_database/mafft_align/
+
+### 2.2 Multiple Sequence Alignment
+Protein sequences were aligned using MAFFT. Installation instructions are available [here]:(https://mafft.cbrc.jp/alignment/software/).
+
+Example MAFFT usage:
 ```
-bash ../scripts/mafft_align.sh 
+mafft --auto [CD_HIT_OUTPUT_FASTA] > [ENZYME_NAME]_mafft.fasta
+```
+To perform alignments for all datasets, run the provided script:
+```
+bash ../scripts/mafft_align.sh
+```
+Alignment results will be generated in:
+```
+genomes_download/Protein_database/mafft_align/
+```
+Verify the output files
+```
 cd genomes_download/Protein_database/mafft_align/
 ls
 ```
-In the end, let's construct protein models with [HMMER](https://github.com/EddyRivasLab/hmmer).In this link aside, I've installed the 3.4 version for creation of models and sialylation protein's annotation.
-```
-bash ../../scripts/hmm_models.sh #results will be located in this PATH: genomes_download/Protein_database/mafft_align/hmm_models 
-```
-Let's move hmm models for external rings annotation into another directory
-```
-cd ../../../ #you must be located in Protein_database
-mkdir external_rings_models
-mv ./mafft_align/hmm_models/neu*hmm ./external_rings_models
-mv ./mafft_align/hmm_models/kps*hmm ./external_rings_models
-ls ./external_rings_models #check if files are there
-cd ../ #you must be located in genomes_download
 
+### 2.3 Construction of HMM Profiles
+Hidden Markov Models (HMMs) were built from the aligned protein sequences using HMMER.
+The analyses were performed using HMMER v3.4, which was also used for downstream annotation of sialylation-related proteins.
+
+Run the model construction script:
 ```
+bash ../../scripts/hmm_models.sh
+```
+The resulting HMM profiles will be located at
+```
+genomes_download/Protein_database/mafft_align/hmm_models/
+```
+
+### 2.4 Organization of HMM Profiles for External Annotation
+HMM models corresponding to proteins used for external ring annotation are grouped into a separate directory for clarity and downstream use.
+```
+cd ../../../   # you should now be in Protein_database/
+
+mkdir external_rings_models
+
+mv ./mafft_align/hmm_models/neu*.hmm ./external_rings_models
+mv ./mafft_align/hmm_models/kps*.hmm ./external_rings_models
+
+ls ./external_rings_models   # verify that the files were moved correctly
+cd ../   # return to genomes_download/
+```
+
 ## 3. Protein analysis
 
 ### 3.1 Protein analysis: Control proteomes
