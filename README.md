@@ -849,64 +849,80 @@ with the name **RAxML_result.final_complete_sialylation_refined.tre**
 
 # 5. Metagenomic analysis
 
-## 5.1 Study 01 colon cancer - France
+## 5.1 Study 01: Colorectal cancer cohort (France)
+ADD PAPER CITTATION HERE !!
 
-### 5.1.1 Download of fastq files
+This section describes the complete processing pipeline used to assemble, bin, annotate, and taxonomically classify metagenomic data from this study.
 
-First download  fastq files
+### 5.1.1 FASTQ download
+Raw sequencing reads were downloaded from the SRA using sra-tools.
 ```
 conda install -c bioconda sra-tools #Install sra-tools
 cd ../../../metagen_files/Study01_france_cancer/
 cat *_get_ID > all_cancer_download.sh
 bash cancer_01_download.sh
 ```
-### 5.1.2 Quality filtering
-
-After this, it's time to do a filtering with fastp
+### 5.1.2 Quality control (fastp)
+Quality filtering and adapter trimming were performed using fastp.
 ```
 conda install -c bioconda fastp #download fastp
 bash script_fastp_filtering.sh
 ls outputs_fastp #folder with result of filtering
 ```
-Results will be at **outputs_fastp** folder
+Output directory:
+```
+outputs_fastp
+```
 
-### 5.1.3 Download of human genome
+### 5.1.3 Host genome preparation (GRCh38)
+The human reference genome (ID: GRCh38) was downloaded and indexed for host read removal.
 ```
 conda install -c bioconda bowtie2 #download bowtie2 via conda
 bash script_get_human_genome_GRch38.sh
 ```
-Output will be at **human_genome** folder.
+Output directory:
+```
+human_genome
+```
 
-### 5.1.4 Human genome alignment
+### 5.1.4 Alignment against the human genome
 
-We will align all fastq files against human genome 
+All filtered reads were aligned against the human reference genome using Bowtie2.
 ```
 bash script_align_reads_human_genome.sh
 ls outputs_bowtie2_FR # list output files
 ```
-Files will be saved at **outputs_bowtie2_FR** folder.
+Output directory:
+```
+outputs_bowtie2_FR
+```
 
-### 5.1.5 Remove human genome alignment
+### 5.1.5 Removal of host-derived reads
 
-After alignment, we will remove all human genome alignment to our fastq files, as we want only microbiota genomes'source
-
+Reads aligning to the human genome were removed using samtools, retaining only microbial reads.
 ```
 conda install -c bioconda samtools #download samtools via conda
 bash script_remove_human_genome.sh
 ```
-Results will be saved at **clean_reads_FR** folder
+Output directory:
+```
+clean_reads_FR
+```
 
-### 5.1.6 Merge sequences with FLASH
+### 5.1.6 Read merging (FLASH)
+Paired-end reads were merged using FLASH, where applicable.
 ```
 conda install -c bioconda flash #install flash via conda
 bash script_flash.sh
 ```
-### 5.1.7 Generate contigs with MEGAHIT
+### 5.1.7 Metagenomic assembly (MEGAHIT)
+Cleaned reads were assembled into contigs using MEGAHIT.
 ```
 conda install -c bioconda megahit
 bash script_megahit.sh
 ```
-### 5.1.8 Generate bins with metabat
+### 5.1.8 Genome binning (MetaBAT2)
+Metagenome-assembled genomes (MAGs) were generated using MetaBAT2.
 ```
 conda install bioconda::metabat2
 bash create_index.sh #create index
@@ -915,7 +931,8 @@ bash generate_bins.sh #generate bins
 bash rename_bins_files.sh #rename files based on their directories
 ```
 
-### 5.1.9 Generate proteins faa files with prokka
+### 5.1.9 Protein prediction (Prokka)
+Protein-coding sequences were predicted for each bin using Prokka.
 ```
 cd bins_paired
 mkdir all_prokka
@@ -923,36 +940,52 @@ bash prokka_script.sh
 bash mv_prokka_files.sh 
 bash rename_fasta_header.sh 
 ```
-Files with faa extension are now inside **all_prokka** folder. Let's see if everything is ok. Check if files are renamed corrected with their respective directory with **less file_name.faa** command
+Protein FASTA files (.faa) are located in:
+```
+bins_paired/all_prokka/
+```
+
+Verify that headers and filenames are correct:
 ```
 cd all_prokka 
 ls
+less <file_name>.faa
 ```
-### 5.1.10 Hmmer analysis
-
-Now, it's time to do a hmmer annotation
-
+### 5.1.10 HMMER annotation
+Protein sequences were annotated using HMMER models.
 ```
 cd ../../ #must be at Study01_france_cancer folder
 bash metagen_hmmer.sh
 ```
-Process hmmer results. Output files are in this path **metagen_files/Study01_france_cancer/output_data**
+Output directory:
+```
+metagen_files/Study01_france_cancer/output_data
 ```
 
+### 5.1.11 InterProScan analysis
+FASTA files for InterProScan were generated during the HMMER step and are located at:
 ```
-### 5.1.11 Interpro analysis
-
-Output files with sequences fasta to run Interpro will be at this path **metagen_files/Study01_france_cancer/output_data/Interproscan_analysis**. 
+metagen_files/Study01_france_cancer/output_data/Interproscan_analysis
+```
+Run InterProScan:
 ```
 bash ../scripts/interpro_analysis_FR.sh
 ```
-Final results of Interproscan are available at **metagen_files/Study01_france_cancer/output_data/Interpro_results/** folder, which will be useful to execute Interproscan R'script.
-Now it's time to execute **Interpro_results_FR** R'script to filter sequences based on signatures. This script is available at **metagen_files/Study01_france_cancer/** folder. Final result of  Interproscan analysis are available at  **metagen_files/Study01_france_cancer/output_data/Interpro_results/**
+Final InterProScan results are available at:
+```
+metagen_files/Study01_france_cancer/output_data/Interpro_results/
+```
+These results are further processed using the R script *07.Interpro_results_FR*, located in:
+```
+metagen_files/Study01_france_cancer/
+```
 
-### 5.1.12 Phylogeny Identification of bins
-
-Now, it's time to identify bins that passed the Interproscan analysis filtering. File with bins_ID are presented at **metagen_files/Study01_france_cancer/output_data/Interpro_results/** with the name **bins_for_identification.tsv**. Let's handle this file and extract the genomes file for identification.
-
+### 5.1.12 Phylogeny Identification of bins (GTDB-Tk)
+Bins passing InterProScan filtering are listed in:
+```
+metagen_files/Study01_france_cancer/output_data/Interpro_results/ins_for_identification.tsv
+```
+Prepare bins for taxonomic classification:
 ```
 cd ./output_data/Interpro_results/ #considering that you are at Study01_france_cancer folder
 less bins_for_identification.tsv
@@ -969,7 +1002,8 @@ done < bins_for_identification_modified.tsv
 
 ls ./bins_paired_sialylation/
 ```
-Download GTDB-tk for analysis. I followed GTDB-tk [manual](https://ecogenomics.github.io/GTDBTk/installing/index.html#installing)
+### 5.1.13 GTDB-Tk setup and execution
+Download GTDB-Tk reference data following the official [installation manual](https://ecogenomics.github.io/GTDBTk/installing/index.html#installing)
 ```
 cd ../../ #must be at metagen_files folder
 mkdir GTDB_DATA && cd GTDB_DATA
@@ -980,22 +1014,28 @@ cd split_package #go to files' folder
  cat gtdbtk_r226_data.tar.gz.part_* > gtdbtk_r226_data.tar.gz #cat all files into one
  tar xvzf gtdbtk_r226_data.tar.gz #untar file
 ```
-Also, download GTDB-tk via conda
+Install GTDB-Tk via conda:
 ```
 conda create -n gtdbtk-2.6.1 -c conda-forge -c bioconda gtdbtk=2.6.1
 conda activate gtdbtk-2.6.0
 ```
-Execute GTDB script.
+Run taxonomic classification:
 ```
 bash metagen_FR_GTDB.sh
 ```
-Summary results are at **metagen_files/Study01_france_cancer/output_data** folder with file named **gtdbtk.bac120.summary_FR.tsv**
+Summary output:
+```
+metagen_files/Study01_france_cancer/output_data/gtdbtk.bac120.summary_FR.tsv
+```
 
-### 5.1.13 Check quality of bins with CheckM
+### 5.1.14 Bin quality assessment (CheckM)
+Genome completeness and contamination were assessed using CheckM.
 ```
 conda activate checkm
 export CHECKM_DATA_PATH=YOUR/PATH/TO/CHECKM/DATA
 bash checkm_script_metagen_FR.sh
-
 ```
-Results will be at **checkm_result_bins_with_sia** folder
+Output directory:
+```
+checkm_result_bins_with_sia
+```
