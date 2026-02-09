@@ -134,7 +134,6 @@ sed -i '1d' GCF_complete_without_checkM.txt
 xargs -a GCF_complete_without_checkM.txt -I {} datasets summary genome accession {} --as-json-lines | dataformat tsv genome --fields organism-name,accession,checkm-completeness,checkm-contamination > remain_CheckM_data.tsv
 mv remain_CheckM_data.tsv remain_CheckM_data_complete.tsv
 ```
-After this step, return to Part 02 of the notebook: *01.Checkm_refseq_Reanalise_V2_R.ipynb*. 
 
 ### 1.3.3 Running CheckM for Missing Genomes
 To compute completeness and contamination for genomes lacking CheckM data, install CheckM following the official [documentation]:(https://github.com/Ecogenomics/CheckM/wiki/Installation). Nonetheless, below are the commands to:
@@ -185,7 +184,8 @@ awk -F',' '/^GCF_/ { print $1, $11, $12 }' bin_stats_ext.tsv > checkm_GCF_delim.
 awk -F' ' 'BEGIN{OFS="\t"} /^GCF_/ { print $1, $6, $8 }' checkm_GCF_delim.txt > quality_report.tsv #choose right colummns that I want
 ```
 The file *quality_report.tsv* contains genome accession IDs along with completeness and contamination values used for downstream filtering.
-At this point, return to the notebook: *Checkm_refseq_Reanalise_V2_R.ipynb*
+
+After this step, return to Part 02 of the notebook: *01.Checkm_refseq_Reanalise_V2_R.ipynb*. 
 
 
 ## **2. HMMER Model Construction**
