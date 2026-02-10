@@ -334,13 +334,27 @@ sed -i 's/ \{1,\}/\t/g' *_output.tsv
 Proteomes corresponding to genomes that passed CheckM quality filtering were downloaded from NCBI.
 ### 3.2.1 Download of Filtered Proteomes
 ```
-cd ../../ #go to genomes_download folder and then move checkm_filter_v2_complete.tsv to this folder
-cut -f2 checkm_filter_v2_complete.tsv > checkm_filter_v2_complete_ID.tsv
-sed -i '1d' checkm_filter_v2_complete_ID.tsv
-datasets download genome accession --inputfile checkm_filter_v2_complete_ID.tsv --include protein --dehydrated  --filename proteins.zip
-rm -rfv proteins/
+cd ../../  # go to genomes_download folder and ensure checkm_filter_v2_complete.tsv is here
+
+# Extract RefSeq accessions, remove header and quotes
+cut -f2 checkm_filter_v2_complete.tsv \
+  | sed '1d; s/"//g' \
+  | sed 's/^\(GCF_[0-9]\{9\}\.[0-9]\+\).*/\1/' \
+  | sort -u \
+  > checkm_filter_v2_complete_ID.tsv
+
+# Download RefSeq proteomes for filtered genomes
+datasets download genome accession \
+  --inputfile checkm_filter_v2_complete_ID.tsv \
+  --include protein \
+  --dehydrated \
+  --filename proteins.zip
+
+# Unpack and rehydrate protein files
+rm -rf proteins/
 unzip proteins.zip -d proteins
 datasets rehydrate --directory proteins
+
 ```
 ### 3.2.2 Renaming and Formatting of Proteomes
 ```
