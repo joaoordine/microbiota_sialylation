@@ -358,13 +358,15 @@ datasets rehydrate --directory proteins
 ```
 ### 3.2.2 Renaming and Formatting of Proteomes
 ```
-bash ../scripts/rename_files.sh
-find proteins/ncbi_dataset/data/GCF*/ -type f -iname "*.faa" -exec mv -v "{}" ./proteins/ \;
-mkdir proteins/proteins_sialylation/final_complete_sialylation/ #create more directories
+cd proteins/
+bash ../scripts/rename_file.sh
+find ./ncbi_dataset/data/GCF*/ -type f -iname "*.faa" -exec mv -v "{}" . \;
+mkdir ./proteins_sialylation/
+mkdir ./proteins_sialylation/final_complete_sialylation/ #create more directories
 ```
 Update FASTA headers to preserve proteome identity during HMMER analysis:
 ```
-cd proteins
+cd proteins # only if you're not already inside proteins
 for f in *.faa; do sed -i "s/^>/>${f}_/" "$f"; done
 ```
 ### 3.2.3 Organization of HMMER Analyses
@@ -373,7 +375,7 @@ cd .. #must be at genomes_download folder
 mkdir HMMER_analysis # you must be located at **genomes_download** folder
 cd HMMER_analysis
 mkdir neuA_out pm0188_out PF11477_out neuS_out PF06002_out lst_out lic3X_out IPR010866_out
-cd ../../ #must be at genomes_download folder
+cd ../ #must be at genomes_download folder
 
 cd scripts/
 bash ncbi_teste_own_hmmer.sh
