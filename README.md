@@ -106,8 +106,8 @@ genomes_download/
 ```
 mv assembly_summary.txt ./genomes_download && mv CheckM_report_prokaryotes.txt ./genomes_download
 cd genomes_download
-grep -c “Complete” assembly_summary.txt
-grep "Complete" assembly_summary.txt > assembly_complete
+grep -c Complete assembly_summary.txt
+grep Complete assembly_summary.txt > assembly_complete
 cut -f1,8,9,20 assembly_complete > assembly_complete_summary.tsv #retrieve info that I want to get
 ```
 The resulting file assembly_complete_summary.tsv contains the selected metadata fields required for downstream analyses.
