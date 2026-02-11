@@ -241,7 +241,8 @@ The analyses were performed using HMMER v3.4, which was also used for downstream
 
 Run the model construction script:
 ```
-bash ../../scripts/hmm_models.sh
+cd ../.. # run the script below inside genomes_download dir
+bash scripts/hmm_models.sh 
 ```
 The resulting HMM profiles will be located at
 ```
